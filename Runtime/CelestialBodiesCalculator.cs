@@ -202,45 +202,5 @@ namespace UnityEssentials
 
             return currentMoonPhase;
         }
-
-        public static (double, double) UpdateMilkyWayPosition(DateTime dateTime, double latitude, double longitude)
-        {
-            // Galactic Center coordinates (RA and Dec)
-            double galacticCenterRightAscension = 266.4; // degrees
-            double galacticCenterDeclination = -29.0; // degrees
-
-            // Convert to radians for calculations
-            double rightAscensionRadians = galacticCenterRightAscension * Deg2Rad;
-            double declinationRadians = galacticCenterDeclination * Deg2Rad;
-
-            // Get sidereal time in degrees
-            double siderealTime = GetLocalSiderealTime(dateTime, (float)longitude);
-
-            // Calculate Hour Angle (HA) in radians
-            double hourAngle = (siderealTime - galacticCenterRightAscension) * Deg2Rad;
-
-            // Observer's latitude in radians
-            double latitudeRadians = latitude * Deg2Rad;
-
-            // Calculate altitude
-            double sinAltitude = Math.Sin(declinationRadians) * Math.Sin(latitudeRadians) +
-                                 Math.Cos(declinationRadians) * Math.Cos(latitudeRadians) * Math.Cos(hourAngle);
-            double altitude = Math.Asin(sinAltitude);
-
-            // Calculate azimuth
-            double cosAzimuth = (Math.Sin(declinationRadians) - Math.Sin(altitude) * Math.Sin(latitudeRadians)) /
-                                (Math.Cos(altitude) * Math.Cos(latitudeRadians));
-            double azimuth = Math.Acos(cosAzimuth);
-
-            // Adjust azimuth for quadrant
-            if (Math.Sin(hourAngle) > 0)
-                azimuth = 2 * Math.PI - azimuth;
-
-            // Convert to degrees
-            float azimuthDegrees = (float)(azimuth * Rad2Deg);
-            float altitudeDegrees = (float)(altitude * Rad2Deg);
-
-            return (azimuthDegrees, altitudeDegrees);
-        }
     }
 }
