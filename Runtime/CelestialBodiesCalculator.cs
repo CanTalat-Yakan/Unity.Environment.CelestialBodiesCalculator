@@ -26,20 +26,22 @@ namespace UnityEssentials
         WaningCrescent
     }
 
+    [Serializable]
     public struct SunProperties
     {
-        public double AzimuthAngle;
-        public double ElevationAngle;
-        public SunPhase Phase;
+        [ReadOnly] public double AzimuthAngle;
+        [ReadOnly] public double ElevationAngle;
+        [ReadOnly] public SunPhase Phase;
     }
 
+    [Serializable]
     public struct MoonProperties
     {
-        public double Distance;
-        public double Illumination;
-        public double AzimuthAngle;
-        public double ElevationAngle;
-        public MoonPhase Phase;
+        [ReadOnly] public double Distance;
+        [ReadOnly] public double Illumination;
+        [ReadOnly] public double AzimuthAngle;
+        [ReadOnly] public double ElevationAngle;
+        [ReadOnly] public MoonPhase Phase;
     }
 
     public static class CelestialBodiesCalculator

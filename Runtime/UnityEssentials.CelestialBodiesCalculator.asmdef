@@ -2,7 +2,8 @@
     "name": "UnityEssentials.CelestialBodiesCalculator",
     "rootNamespace": "UnityEssentials",
     "references": [
-        "GUID:df380645f10b7bc4b97d4f5eb6303d95"
+        "GUID:df380645f10b7bc4b97d4f5eb6303d95",
+        "GUID:9a6bb239ccccf6645b460348af49b773"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
