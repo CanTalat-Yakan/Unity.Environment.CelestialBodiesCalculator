@@ -53,7 +53,7 @@ namespace UnityEssentials
             double declinationGalacticPole = 27.1283 * Deg2Rad;
 
             // Observer's location
-            double latitudeRad = latitude * Deg2Rad;
+            double latitudeRad = Math.Clamp(latitude, -89, 89) * Deg2Rad;
             double longitudeRad = longitude * Deg2Rad; // Ensure radians if needed
 
             // Calculate Local Sidereal Time (in degrees)
@@ -64,12 +64,11 @@ namespace UnityEssentials
             hourAngle = ((hourAngle + 360) % 360) * Deg2Rad; // Normalize to [0, 2π)
 
             // Convert to horizontal coordinates
-            double sinAltitude = Math.Sin(declinationGalacticPole) * Math.Sin(latitudeRad) + Math.Cos(declinationGalacticPole) * Math.Cos(latitudeRad) * Math.Cos(hourAngle);
-            double altitude = Math.Asin(sinAltitude);
-
-            double cosAzimuth = (Math.Sin(declinationGalacticPole) - Math.Sin(altitude) * Math.Sin(latitudeRad)) / (Math.Cos(altitude) * Math.Cos(latitudeRad));
-            cosAzimuth = Math.Clamp(cosAzimuth, -1.0, 1.0);
-            double azimuth = Math.Acos(cosAzimuth);
+            double altitude = Math.Asin(Math.Sin(declinationGalacticPole) * Math.Sin(latitudeRad) + 
+                                        Math.Cos(declinationGalacticPole) * Math.Cos(latitudeRad) * Math.Cos(hourAngle));
+            double azimuth = Math.Acos((Math.Sin(declinationGalacticPole) -
+                                        Math.Sin(altitude) * Math.Sin(latitudeRad)) /
+                                       (Math.Cos(altitude) * Math.Cos(latitudeRad)));
 
             if (Math.Sin(hourAngle) > 0)
                 azimuth = 2 * Math.PI - azimuth;
