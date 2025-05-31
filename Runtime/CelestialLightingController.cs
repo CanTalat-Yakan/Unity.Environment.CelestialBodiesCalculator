@@ -8,19 +8,25 @@ namespace UnityEssentials
         public static bool IsSunLightAboveHorizon { get; private set; } = false;
         public static bool IsMoonLightAboveHorizon { get; private set; } = false;
 
-        public static void UpdateLightProperties(Light sunLight, Light moonLight, SunProperties sunProperties, MoonProperties moonProperties)
+        public static void UpdateLightProperties(Light sunLight, Light moonLight, SunProperties sunProperties, MoonProperties moonProperties, float spaceWeight)
         {
-            UpdateSunLightProperties(sunLight, (float)sunProperties.ElevationAngle);
-            UpdateMoonLightProperties(moonLight, (float)moonProperties.ElevationAngle, moonProperties.Illumination);
+            UpdateSunLightProperties(sunLight, (float)sunProperties.ElevationAngle, spaceWeight);
+            UpdateMoonLightProperties(moonLight, (float)moonProperties.ElevationAngle, moonProperties.Illumination, spaceWeight);
 
-            UpdateLightShadows(sunLight, moonLight);
+            UpdateLightShadows(sunLight, moonLight, spaceWeight);
             UpdateSunLensFlare(sunLight);
         }
 
-        private static void UpdateLightShadows(Light sunLight, Light moonLight)
+        private static void UpdateLightShadows(Light sunLight, Light moonLight, float spaceWeight)
         {
-            const float nauticalTwilight = 0.1f;
+            if (spaceWeight >= 0.3f)
+            {
+                sunLight.shadows = LightShadows.None;
+                moonLight.shadows = LightShadows.None;
+                return;
+            }
 
+            const float nauticalTwilight = 0.1f;
             IsSunLightAboveHorizon = -nauticalTwilight < Vector3.Dot(-sunLight.transform.forward, Vector3.up);
             sunLight.shadows = (IsSunLightAboveHorizon) ? LightShadows.Soft : LightShadows.None;
 
@@ -28,18 +34,20 @@ namespace UnityEssentials
             moonLight.shadows = (IsMoonLightAboveHorizon && !IsSunLightAboveHorizon) ? LightShadows.Soft : LightShadows.None;
         }
 
-        private static void UpdateSunLightProperties(Light sunLight, float sunElevationAngle)
+        private static void UpdateSunLightProperties(Light sunLight, float sunElevationAngle, float spaceWeight)
         {
             // Calculate sun intensity and color
             float sunIntensity = CalculateSunIntensity(sunElevationAngle);
 
-            float minIntensity = 5000f; // Night sun intensity in lux
+            const float minIntensity = 5000f; // Night sun intensity in lux
             sunIntensity = Mathf.Max(minIntensity, sunIntensity);
 
             // Update SunLight component
             sunLight.lightUnit = LightUnit.Lux;
-            sunLight.intensity = sunIntensity;
 
+            const float spaceMinIntensity = 300f; // Space sun intensity in lux
+            // Blend the sun intensity with space weight
+            sunLight.intensity = Mathf.Lerp(sunIntensity, spaceMinIntensity, spaceWeight);
         }
 
         private static float CalculateSunIntensity(float elevationAngleDegrees)
@@ -47,12 +55,11 @@ namespace UnityEssentials
             if (elevationAngleDegrees <= 0f)
                 return 0f; // Sun below horizon
 
-            float maxIntensity = 120000f; // Noon sun intensity in lux
+            const float maxIntensity = 120000f; // Noon sun intensity in lux
             float elevationRadians = elevationAngleDegrees * Mathf.Deg2Rad;
 
             // Use sine of elevation angle for intensity
             float intensityFactor = Mathf.Sin(elevationRadians);
-
             return intensityFactor * maxIntensity;
         }
 
@@ -67,7 +74,6 @@ namespace UnityEssentials
 
             // Map the dot product to a 0 to 1 range
             float intensityFactor = Mathf.InverseLerp(0f, 1f, dotProduct);
-
             // Apply the falloff curve
             intensityFactor = Mathf.Pow(intensityFactor, 1);
 
@@ -75,7 +81,7 @@ namespace UnityEssentials
             lensFlare.intensity = intensityFactor * 1;
         }
 
-        private static void UpdateMoonLightProperties(Light moonLight, float moonElevationAngle, double moonIllumination)
+        private static void UpdateMoonLightProperties(Light moonLight, float moonElevationAngle, double moonIllumination, float spaceWeight)
         {
             // Calculate moon intensity and color
             float moonIntensity = CalculateMoonIntensity(moonElevationAngle, moonIllumination);
@@ -86,7 +92,10 @@ namespace UnityEssentials
 
             // Update MoonLight component
             moonLight.lightUnit = LightUnit.Lux;
-            moonLight.intensity = moonIntensity;
+
+            const float spaceMinIntensity = 0; // Space moon intensity in lux
+            // Blend the sun intensity with space weight
+            moonLight.intensity = Mathf.Lerp(moonIntensity, spaceMinIntensity, spaceWeight);
         }
 
         private static float CalculateMoonIntensity(float elevationAngleDegrees, double illuminationFraction)
@@ -94,7 +103,7 @@ namespace UnityEssentials
             if (elevationAngleDegrees <= 0f)
                 return 0f; // Moon below horizon
 
-            float maxIntensity = 0.5f; // Full moon intensity in lux
+            const float maxIntensity = 0.5f; // Full moon intensity in lux
             return (float)(illuminationFraction * maxIntensity);
         }
     }

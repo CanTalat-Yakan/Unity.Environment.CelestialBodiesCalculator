@@ -46,6 +46,38 @@ namespace UnityEssentials
 
     public static class CelestialBodiesCalculator
     {
+        public static (double x, double y, double z) GetSolarSystemUpDirection(DateTime dateTime, float latitude, float longitude)
+        {
+            // The "up" direction of the solar system is typically defined as the direction of the north ecliptic pole (J2000).
+            // North ecliptic pole (J2000): RA = 18h 0m 0s (270°), Dec = +66.5607°
+            double rightAscensionEclipticPole = 270.0 * Deg2Rad;
+            double declinationEclipticPole = 66.5607 * Deg2Rad;
+
+            // Observer's location
+            double latitudeRad = Math.Clamp(latitude, -89, 89) * Deg2Rad;
+            double longitudeRad = longitude * Deg2Rad;
+
+            // Calculate Local Sidereal Time (in degrees)
+            double localSiderealTime = GetLocalSiderealTime(dateTime, longitude); // Should be in degrees
+
+            // Hour angle (in radians)
+            double hourAngle = (localSiderealTime - (rightAscensionEclipticPole * Rad2Deg));
+            hourAngle = ((hourAngle + 360) % 360) * Deg2Rad; // Normalize to [0, 2π)
+
+            // Convert to horizontal coordinates
+            double altitude = Math.Asin(Math.Sin(declinationEclipticPole) * Math.Sin(latitudeRad) +
+                                        Math.Cos(declinationEclipticPole) * Math.Cos(latitudeRad) * Math.Cos(hourAngle));
+            double azimuth = Math.Acos((Math.Sin(declinationEclipticPole) -
+                                        Math.Sin(altitude) * Math.Sin(latitudeRad)) /
+                                       (Math.Cos(altitude) * Math.Cos(latitudeRad)));
+
+            if (Math.Sin(hourAngle) > 0)
+                azimuth = 2 * Math.PI - azimuth;
+
+            var solarSystemUp = AzimuthAltitudeToVector(azimuth, altitude);
+            return (solarSystemUp.x, solarSystemUp.y, solarSystemUp.z);
+        }
+
         public static (double x, double y, double z) GetGalacticUpDirection(DateTime dateTime, float latitude, float longitude)
         {
             // Galactic North Pole (J2000)
