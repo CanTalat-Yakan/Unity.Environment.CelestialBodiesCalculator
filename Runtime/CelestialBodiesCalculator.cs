@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using static UnityEssentials.CelestialCalculationUtilities;
 
 namespace UnityEssentials
@@ -46,6 +46,38 @@ namespace UnityEssentials
 
     public static class CelestialBodiesCalculator
     {
+        public static (double x, double y, double z) GetGalacticUpDirection(DateTime dateTime, float latitude, float longitude)
+        {
+            // Galactic North Pole (J2000)
+            double rightAscensionGalacticPole = 192.8595 * Deg2Rad;
+            double declinationGalacticPole = 27.1283 * Deg2Rad;
+
+            // Observer's location
+            double latitudeRad = latitude * Deg2Rad;
+            double longitudeRad = longitude * Deg2Rad; // Ensure radians if needed
+
+            // Calculate Local Sidereal Time (in degrees)
+            double localSiderealTime = GetLocalSiderealTime(dateTime, longitude); // Should be in degrees
+
+            // Hour angle (in radians)
+            double hourAngle = (localSiderealTime - (rightAscensionGalacticPole * Rad2Deg));
+            hourAngle = ((hourAngle + 360) % 360) * Deg2Rad; // Normalize to [0, 2π)
+
+            // Convert to horizontal coordinates
+            double sinAltitude = Math.Sin(declinationGalacticPole) * Math.Sin(latitudeRad) + Math.Cos(declinationGalacticPole) * Math.Cos(latitudeRad) * Math.Cos(hourAngle);
+            double altitude = Math.Asin(sinAltitude);
+
+            double cosAzimuth = (Math.Sin(declinationGalacticPole) - Math.Sin(altitude) * Math.Sin(latitudeRad)) / (Math.Cos(altitude) * Math.Cos(latitudeRad));
+            cosAzimuth = Math.Clamp(cosAzimuth, -1.0, 1.0);
+            double azimuth = Math.Acos(cosAzimuth);
+
+            if (Math.Sin(hourAngle) > 0)
+                azimuth = 2 * Math.PI - azimuth;
+
+            var galacticUp = AzimuthAltitudeToVector(azimuth, altitude);
+            return (galacticUp.x, galacticUp.y, galacticUp.z);
+        }
+
         public static string CurrentSunPhase { get; private set; }
         public static string CurrentMoonPhase { get; private set; }
 

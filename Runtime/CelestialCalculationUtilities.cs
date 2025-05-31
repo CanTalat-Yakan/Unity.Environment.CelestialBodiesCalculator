@@ -12,49 +12,49 @@ namespace UnityEssentials
         public static double ToJulianDays(DateTime date) =>
             date.ToUniversalTime().Subtract(new DateTime(2000, 1, 1, 12, 0, 0, DateTimeKind.Utc)).TotalDays;
 
-        public static double SunMeanAnomaly(double d) =>
-            Rad * (357.5291 + 0.98560028 * d);
+        public static double SunMeanAnomaly(double daysSinceJ2000) =>
+            Rad * (357.5291 + 0.98560028 * daysSinceJ2000);
 
-        public static double EclipticLongitude(double m)
+        public static double EclipticLongitude(double meanAnomaly)
         {
-            double c = Rad * (1.9148 * Math.Sin(m) + 0.02 * Math.Sin(2 * m) + 0.0003 * Math.Sin(3 * m)); // Equation of center
-            double p = Rad * 102.9372; // Perihelion of the Earth
-            return m + c + p + Math.PI;
+            double equationOfCenter = Rad * (1.9148 * Math.Sin(meanAnomaly) + 0.02 * Math.Sin(2 * meanAnomaly) + 0.0003 * Math.Sin(3 * meanAnomaly));
+            double perihelion = Rad * 102.9372;
+            return meanAnomaly + equationOfCenter + perihelion + Math.PI;
         }
 
-        public static (double Declination, double RightAscension) SunCoordinates(double d)
+        public static (double Declination, double RightAscension) SunCoordinates(double daysSinceJ2000)
         {
-            double m = SunMeanAnomaly(d);
-            double l = EclipticLongitude(m);
+            double meanAnomaly = SunMeanAnomaly(daysSinceJ2000);
+            double eclipticLongitude = EclipticLongitude(meanAnomaly);
 
-            double dec = Math.Asin(Math.Sin(l) * Math.Sin(EarthObliquity));
-            double ra = Math.Atan2(Math.Cos(EarthObliquity) * Math.Sin(l), Math.Cos(l));
-            return (dec, ra);
+            double declination = Math.Asin(Math.Sin(eclipticLongitude) * Math.Sin(EarthObliquity));
+            double rightAscension = Math.Atan2(Math.Cos(EarthObliquity) * Math.Sin(eclipticLongitude), Math.Cos(eclipticLongitude));
+            return (declination, rightAscension);
         }
 
-        public static (double Declination, double RightAscension, double Distance) MoonCoordinates(double d)
+        public static (double Declination, double RightAscension, double Distance) MoonCoordinates(double daysSinceJ2000)
         {
-            double L = Rad * (218.316 + 13.176396 * d); // Mean longitude
-            double M = Rad * (134.963 + 13.064993 * d); // Mean anomaly
-            double F = Rad * (93.272 + 13.229350 * d);  // Mean distance
+            double meanLongitude = Rad * (218.316 + 13.176396 * daysSinceJ2000);
+            double meanAnomaly = Rad * (134.963 + 13.064993 * daysSinceJ2000);
+            double meanDistance = Rad * (93.272 + 13.229350 * daysSinceJ2000);
 
-            double l = L + Rad * 6.289 * Math.Sin(M);   // Longitude
-            double b = Rad * 5.128 * Math.Sin(F);       // Latitude
-            double dt = 385001 - 20905 * Math.Cos(M);   // Distance to Moon in km
+            double longitude = meanLongitude + Rad * 6.289 * Math.Sin(meanAnomaly);
+            double latitude = Rad * 5.128 * Math.Sin(meanDistance);
+            double distanceToMoon = 385001 - 20905 * Math.Cos(meanAnomaly);
 
-            double ra = Math.Atan2(Math.Sin(l) * Math.Cos(EarthObliquity) - Math.Tan(b) * Math.Sin(EarthObliquity), Math.Cos(l));
-            double dec = Math.Asin(Math.Sin(b) * Math.Cos(EarthObliquity) + Math.Cos(b) * Math.Sin(EarthObliquity) * Math.Sin(l));
+            double rightAscension = Math.Atan2(Math.Sin(longitude) * Math.Cos(EarthObliquity) - Math.Tan(latitude) * Math.Sin(EarthObliquity), Math.Cos(longitude));
+            double declination = Math.Asin(Math.Sin(latitude) * Math.Cos(EarthObliquity) + Math.Cos(latitude) * Math.Sin(EarthObliquity) * Math.Sin(longitude));
 
-            return (dec, ra, dt);
+            return (declination, rightAscension, distanceToMoon);
         }
 
-        public static double SiderealTime(double d, double lw) =>
-            Rad * (280.16 + 360.9856235 * d) - lw;
+        public static double SiderealTime(double daysSinceJ2000, double longitudeWest) =>
+            Rad * (280.16 + 360.9856235 * daysSinceJ2000) - longitudeWest;
 
-        public static double AstroRefraction(double h)
+        public static double AstroRefraction(double altitude)
         {
-            if (h < 0) h = 0; // The formula works for positive altitudes only.
-            return 0.0002967 / Math.Tan(h + 0.00312536 / (h + 0.08901179));
+            if (altitude < 0) altitude = 0;
+            return 0.0002967 / Math.Tan(altitude + 0.00312536 / (altitude + 0.08901179));
         }
 
         public static int GetDaysInMonth(int year, int month) =>
@@ -63,28 +63,24 @@ namespace UnityEssentials
         public static double GetLocalSiderealTime(DateTime dateTime, float longitude)
         {
             // Greenwich Mean Sidereal Time (GMST)
-            double jd = ToJulianDays(dateTime);
-            double gmst = 280.46061837 + 360.98564736629 * (jd - 2451545.0);
+            double julianDays = ToJulianDays(dateTime);
+            double greenwichMeanSiderealTime = 280.46061837 + 360.98564736629 * (julianDays - 2451545.0);
 
             // Adjust for observer's longitude
-            double lst = gmst + longitude;
+            double localSiderealTime = greenwichMeanSiderealTime + longitude;
 
             // Normalize to 0-360 degrees
-            return lst % 360.0;
+            return localSiderealTime % 360.0;
         }
 
         public static (double x, double y, double z) AzimuthAltitudeToVector(double azimuth, double altitude)
         {
-            // Adjust azimuth to be measured from the north, positive clockwise
             double az = azimuth;
-
-            // Convert to Cartesian coordinates
             double x = Math.Cos(altitude) * Math.Sin(az);
             double y = Math.Sin(altitude);
             double z = Math.Cos(altitude) * Math.Cos(az);
 
             return (x, y, z);
         }
-
     }
 }
