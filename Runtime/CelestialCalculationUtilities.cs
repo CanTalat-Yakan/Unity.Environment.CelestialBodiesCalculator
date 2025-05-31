@@ -75,10 +75,9 @@ namespace UnityEssentials
 
         public static (double x, double y, double z) AzimuthAltitudeToVector(double azimuth, double altitude)
         {
-            double az = azimuth;
-            double x = Math.Cos(altitude) * Math.Sin(az);
+            double x = Math.Cos(altitude) * Math.Sin(azimuth);
             double y = Math.Sin(altitude);
-            double z = Math.Cos(altitude) * Math.Cos(az);
+            double z = Math.Cos(altitude) * Math.Cos(azimuth);
 
             return (x, y, z);
         }
