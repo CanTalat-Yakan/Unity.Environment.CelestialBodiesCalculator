@@ -19,6 +19,7 @@ namespace UnityEssentials
         {
             double equationOfCenter = Rad * (1.9148 * Math.Sin(meanAnomaly) + 0.02 * Math.Sin(2 * meanAnomaly) + 0.0003 * Math.Sin(3 * meanAnomaly));
             double perihelion = Rad * 102.9372;
+
             return meanAnomaly + equationOfCenter + perihelion + Math.PI;
         }
 
@@ -29,6 +30,7 @@ namespace UnityEssentials
 
             double declination = Math.Asin(Math.Sin(eclipticLongitude) * Math.Sin(EarthObliquity));
             double rightAscension = Math.Atan2(Math.Cos(EarthObliquity) * Math.Sin(eclipticLongitude), Math.Cos(eclipticLongitude));
+
             return (declination, rightAscension);
         }
 
