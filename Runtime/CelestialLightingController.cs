@@ -14,7 +14,7 @@ namespace UnityEssentials
             UpdateMoonLightProperties(moonLight, (float)moonProperties.ElevationAngle, moonProperties.Illumination, spaceWeight);
 
             UpdateLightShadows(sunLight, moonLight, spaceWeight);
-            UpdateSunLensFlare(sunLight);
+            UpdateSunLensFlare(sunLight, spaceWeight);
         }
 
         private static void UpdateLightShadows(Light sunLight, Light moonLight, float spaceWeight)
@@ -39,14 +39,12 @@ namespace UnityEssentials
             // Calculate sun intensity and color
             float sunIntensity = CalculateSunIntensity(sunElevationAngle);
 
-            const float minIntensity = 5000f; // Night sun intensity in lux
+            const float minIntensity = 5_000f; // Night sun intensity in lux
             sunIntensity = Mathf.Max(minIntensity, sunIntensity);
-
-            // Update SunLight component
-            sunLight.lightUnit = LightUnit.Lux;
 
             const float spaceMinIntensity = 300f; // Space sun intensity in lux
             // Blend the sun intensity with space weight
+            sunLight.lightUnit = LightUnit.Lux;
             sunLight.intensity = Mathf.Lerp(sunIntensity, spaceMinIntensity, spaceWeight);
         }
 
@@ -55,7 +53,7 @@ namespace UnityEssentials
             if (elevationAngleDegrees <= 0f)
                 return 0f; // Sun below horizon
 
-            const float maxIntensity = 120000f; // Noon sun intensity in lux
+            const float maxIntensity = 120_000f; // Noon sun intensity in lux
             float elevationRadians = elevationAngleDegrees * Mathf.Deg2Rad;
 
             // Use sine of elevation angle for intensity
@@ -63,7 +61,7 @@ namespace UnityEssentials
             return intensityFactor * maxIntensity;
         }
 
-        private static void UpdateSunLensFlare(Light sunLight)
+        private static void UpdateSunLensFlare(Light sunLight, float spaceWeight)
         {
             var lensFlare = sunLight.GetComponent<LensFlareComponentSRP>();
             if (lensFlare == null)
@@ -78,33 +76,39 @@ namespace UnityEssentials
             intensityFactor = Mathf.Pow(intensityFactor, 1);
 
             // Set the lens flare intensity
-            lensFlare.intensity = intensityFactor * 1;
+            lensFlare.intensity = intensityFactor * (1 - spaceWeight);
         }
 
         private static void UpdateMoonLightProperties(Light moonLight, float moonElevationAngle, double moonIllumination, float spaceWeight)
         {
             // Calculate moon intensity and color
-            float moonIntensity = CalculateMoonIntensity(moonElevationAngle, moonIllumination);
-            //Color moonColor = CalculateMoonColor(moonElevationAngle, moonIllumination);
+            var moonIntensity = CalculateMoonIntensity(moonElevationAngle, moonIllumination);
+            var moonColor = CalculateMoonColor(moonElevationAngle, moonIllumination);
 
-            if (IsSunLightAboveHorizon)
-                moonIntensity = 0;
+            moonLight.color = moonColor;
 
-            // Update MoonLight component
+            const float spaceMinIntensity = 0;
             moonLight.lightUnit = LightUnit.Lux;
-
-            const float spaceMinIntensity = 0; // Space moon intensity in lux
-            // Blend the sun intensity with space weight
             moonLight.intensity = Mathf.Lerp(moonIntensity, spaceMinIntensity, spaceWeight);
         }
 
         private static float CalculateMoonIntensity(float elevationAngleDegrees, double illuminationFraction)
         {
-            if (elevationAngleDegrees <= 0f)
-                return 0f; // Moon below horizon
-
             const float maxIntensity = 0.5f; // Full moon intensity in lux
             return (float)(illuminationFraction * maxIntensity);
+        }
+
+        // Base color for a full moon high in the sky (cool bluish-white)
+        private static Color _fullMoonColor = new Color(0.75f, 0.80f, 1.0f, 1.0f);
+        // Dimmer, more neutral color for low illumination (new moon)
+        private static Color _newMoonColor = new Color(0.2f, 0.22f, 0.25f, 1.0f);
+        private static Color CalculateMoonColor(float moonElevationAngle, double moonIllumination)
+        {
+            // Blend between new moon and full moon color based on illumination
+            var illuminationColor = Color.Lerp(_newMoonColor, _fullMoonColor, (float)moonIllumination);
+            // Apply a slight desaturation and darkening when the moon is near the horizon
+            var elevationFactor = Mathf.InverseLerp(0f, 30f, moonElevationAngle); // 0 at horizon, 1 at 30°+
+            return Color.Lerp(Color.gray, illuminationColor, elevationFactor);
         }
     }
 }
