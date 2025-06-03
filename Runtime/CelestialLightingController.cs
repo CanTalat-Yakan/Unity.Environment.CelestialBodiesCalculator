@@ -8,9 +8,12 @@ namespace UnityEssentials
         public static bool IsSunLightAboveHorizon { get; private set; } = false;
         public static bool IsMoonLightAboveHorizon { get; private set; } = false;
 
-        public static void UpdateLightProperties(Light sunLight, Light moonLight, SunProperties sunProperties, MoonProperties moonProperties, float spaceWeight)
+        public static void UpdateLightProperties(
+            Light sunLight, Light moonLight, 
+            SunProperties sunProperties, MoonProperties moonProperties, 
+            float spaceWeight, float cloudCoverage)
         {
-            UpdateSunLightProperties(sunLight, (float)sunProperties.ElevationAngle, spaceWeight);
+            UpdateSunLightProperties(sunLight, (float)sunProperties.ElevationAngle, spaceWeight, cloudCoverage);
             UpdateMoonLightProperties(moonLight, (float)moonProperties.ElevationAngle, moonProperties.Illumination, spaceWeight);
 
             UpdateLightShadows(sunLight, moonLight, spaceWeight);
@@ -34,18 +37,22 @@ namespace UnityEssentials
             moonLight.shadows = (IsMoonLightAboveHorizon && !IsSunLightAboveHorizon) ? LightShadows.Soft : LightShadows.None;
         }
 
-        private static void UpdateSunLightProperties(Light sunLight, float sunElevationAngle, float spaceWeight)
+        private static void UpdateSunLightProperties(Light sunLight, float sunElevationAngle, float spaceWeight, float cloudCoverage)
         {
             // Calculate sun intensity and color
-            float sunIntensity = CalculateSunIntensity(sunElevationAngle);
-
             const float minIntensity = 5_000f; // Night sun intensity in lux
+            var sunIntensity = CalculateSunIntensity(sunElevationAngle);
             sunIntensity = Mathf.Max(minIntensity, sunIntensity);
 
-            const float spaceMinIntensity = 300f; // Space sun intensity in lux
             // Blend the sun intensity with space weight
+            const float spaceMinIntensity = 300f; // Space sun intensity in lux
             sunLight.lightUnit = LightUnit.Lux;
             sunLight.intensity = Mathf.Lerp(sunIntensity, spaceMinIntensity, spaceWeight);
+
+            // Set the sun color temperature based on cloud coverage
+            const float directSunlight = 5_500; // Space sun temperature in kelvin
+            const float cloudySunlight = 6_000;
+            sunLight.colorTemperature = Mathf.Lerp(directSunlight, cloudySunlight, cloudCoverage);
         }
 
         private static float CalculateSunIntensity(float elevationAngleDegrees)
@@ -54,10 +61,10 @@ namespace UnityEssentials
                 return 0f; // Sun below horizon
 
             const float maxIntensity = 120_000f; // Noon sun intensity in lux
-            float elevationRadians = elevationAngleDegrees * Mathf.Deg2Rad;
+            var elevationRadians = elevationAngleDegrees * Mathf.Deg2Rad;
 
             // Use sine of elevation angle for intensity
-            float intensityFactor = Mathf.Sin(elevationRadians);
+            var intensityFactor = Mathf.Sin(elevationRadians);
             return intensityFactor * maxIntensity;
         }
 
@@ -68,10 +75,10 @@ namespace UnityEssentials
                 return;
 
             // Calculate the dot product between the sun's direction and the up vector
-            float dotProduct = Vector3.Dot(-sunLight.transform.forward, Vector3.up);
+            var dotProduct = Vector3.Dot(-sunLight.transform.forward, Vector3.up);
 
             // Map the dot product to a 0 to 1 range
-            float intensityFactor = Mathf.InverseLerp(0f, 1f, dotProduct);
+            var intensityFactor = Mathf.InverseLerp(0f, 1f, dotProduct);
             // Apply the falloff curve
             intensityFactor = Mathf.Pow(intensityFactor, 1);
 
