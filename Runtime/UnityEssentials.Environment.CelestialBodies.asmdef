@@ -1,5 +1,5 @@
 {
-    "name": "UnityEssentials.Environment.CelestialBodiesCalculator",
+    "name": "UnityEssentials.Environment.CelestialBodies",
     "rootNamespace": "UnityEssentials",
     "references": [
         "GUID:df380645f10b7bc4b97d4f5eb6303d95",

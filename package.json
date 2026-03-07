@@ -1,7 +1,7 @@
 {
-  "name": "com.unityessentials.environment.celestialcoordinates",
-  "version": "2.0.3",
-  "displayName": "Environment CelestialCoordinates",
+  "name": "com.unityessentials.environment.celestialbodies",
+  "version": "2.0.4",
+  "displayName": "Environment CelestialBodies",
   "description": "This is a part of the UnityEssentials Ecosystem",
   "unity": "6000.0",
   "unityRelease": "",
